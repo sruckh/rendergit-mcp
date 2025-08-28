@@ -1,0 +1,1636 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flattened repo – https://github.com/karpathy/rendergit</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji';
+    margin: 0; padding: 0; line-height: 1.45;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+  .meta small { color: #666; }
+  .counts { margin-top: 0.25rem; color: #333; }
+  .muted { color: #777; font-weight: normal; font-size: 0.9em; }
+
+  /* Layout with sidebar */
+  .page { display: grid; grid-template-columns: 320px minmax(0,1fr); gap: 0; }
+  #sidebar {
+    position: sticky; top: 0; align-self: start;
+    height: 100vh; overflow: auto;
+    border-right: 1px solid #eee; background: #fafbfc;
+  }
+  #sidebar .sidebar-inner { padding: 0.75rem; }
+  #sidebar h2 { margin: 0 0 0.5rem 0; font-size: 1rem; }
+
+  .toc { list-style: none; padding-left: 0; margin: 0; overflow-x: auto; }
+  .toc li { padding: 0.15rem 0; white-space: nowrap; }
+  .toc a { text-decoration: none; color: #0366d6; display: inline-block; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  main.container { padding-top: 1rem; }
+
+  pre { background: #f6f8fa; padding: 0.75rem; overflow: auto; border-radius: 6px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; }
+  .highlight { overflow-x: auto; }
+  .file-section { padding: 1rem; border-top: 1px solid #eee; }
+  .file-section h2 { margin: 0 0 0.5rem 0; font-size: 1.1rem; }
+  .file-body { margin-bottom: 0.5rem; }
+  .back-top { font-size: 0.9rem; }
+  .skip-list code { background: #f6f8fa; padding: 0.1rem 0.3rem; border-radius: 4px; }
+  .error { color: #b00020; background: #fff3f3; }
+
+  /* Hide duplicate top TOC on wide screens */
+  .toc-top { display: block; }
+  @media (min-width: 1000px) { .toc-top { display: none; } }
+
+  :target { scroll-margin-top: 8px; }
+
+  /* View toggle */
+  .view-toggle {
+    margin: 1rem 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .toggle-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d9e0;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .toggle-btn.active {
+    background: #0366d6;
+    color: white;
+    border-color: #0366d6;
+  }
+  .toggle-btn:hover:not(.active) {
+    background: #f6f8fa;
+  }
+
+  /* LLM view */
+  #llm-view { display: none; }
+  #llm-text {
+    width: 100%;
+    height: 70vh;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85em;
+    border: 1px solid #d1d9e0;
+    border-radius: 6px;
+    padding: 1rem;
+    resize: vertical;
+  }
+  .copy-hint {
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.9em;
+  }
+
+  /* Pygments */
+  pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: #f8f8f8; }
+.highlight .c { color: #3D7B7B; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #F00 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666 } /* Operator */
+.highlight .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #9C6500 } /* Comment.Preproc */
+.highlight .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.highlight .gr { color: #E40000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #008400 } /* Generic.Inserted */
+.highlight .go { color: #717171 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #04D } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #687822 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #00F; font-weight: bold } /* Name.Class */
+.highlight .no { color: #800 } /* Name.Constant */
+.highlight .nd { color: #A2F } /* Name.Decorator */
+.highlight .ni { color: #717171; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #00F } /* Name.Function */
+.highlight .nl { color: #767600 } /* Name.Label */
+.highlight .nn { color: #00F; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #A2F; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #BBB } /* Text.Whitespace */
+.highlight .mb { color: #666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666 } /* Literal.Number.Float */
+.highlight .mh { color: #666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #A45A77 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #00F } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666 } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body>
+<a id="top"></a>
+
+<div class="page">
+  <nav id="sidebar"><div class="sidebar-inner">
+      <h2>Contents (4)</h2>
+      <ul class="toc toc-sidebar">
+        <li><a href="#top">↑ Back to top</a></li>
+        <li><a href="#file-README-md">README.md</a> <span class="muted">(2.0 KiB)</span></li><li><a href="#file-pyproject-toml">pyproject.toml</a> <span class="muted">(885 B)</span></li><li><a href="#file-rendergit-py">rendergit.py</a> <span class="muted">(17.0 KiB)</span></li><li><a href="#file-uv-lock">uv.lock</a> <span class="muted">(1.7 KiB)</span></li>
+      </ul>
+  </div></nav>
+
+  <main class="container">
+
+    <section>
+        <div class="meta">
+        <div><strong>Repository:</strong> <a href="https://github.com/karpathy/rendergit">https://github.com/karpathy/rendergit</a></div>
+        <small><strong>HEAD commit:</strong> 14d7a58c0f4d815a3447f25e9ef1088c7e9ade84</small>
+        <div class="counts">
+            <strong>Total files:</strong> 33 · <strong>Rendered:</strong> 4 · <strong>Skipped:</strong> 29
+        </div>
+        </div>
+    </section>
+
+    <div class="view-toggle">
+      <strong>View:</strong>
+      <button class="toggle-btn active" onclick="showHumanView()">👤 Human</button>
+      <button class="toggle-btn" onclick="showLLMView()">🤖 LLM</button>
+    </div>
+
+    <div id="human-view">
+      <section>
+        <h2>Directory tree</h2>
+        <pre>.
+├── .git
+│   ├── HEAD
+│   ├── branches
+│   ├── config
+│   ├── description
+│   ├── hooks
+│   │   ├── applypatch-msg.sample
+│   │   ├── commit-msg.sample
+│   │   ├── fsmonitor-watchman.sample
+│   │   ├── post-update.sample
+│   │   ├── pre-applypatch.sample
+│   │   ├── pre-commit.sample
+│   │   ├── pre-merge-commit.sample
+│   │   ├── pre-push.sample
+│   │   ├── pre-rebase.sample
+│   │   ├── pre-receive.sample
+│   │   ├── prepare-commit-msg.sample
+│   │   ├── push-to-checkout.sample
+│   │   ├── sendemail-validate.sample
+│   │   └── update.sample
+│   ├── index
+│   ├── info
+│   │   └── exclude
+│   ├── logs
+│   │   ├── HEAD
+│   │   └── refs
+│   │       ├── heads
+│   │       │   └── master
+│   │       └── remotes
+│   │           └── origin
+│   │               └── HEAD
+│   ├── objects
+│   │   ├── info
+│   │   └── pack
+│   │       ├── pack-e461450b77cc4b2e79d3280abb95a6d3177c3c47.idx
+│   │       ├── pack-e461450b77cc4b2e79d3280abb95a6d3177c3c47.pack
+│   │       └── pack-e461450b77cc4b2e79d3280abb95a6d3177c3c47.rev
+│   ├── packed-refs
+│   ├── refs
+│   │   ├── heads
+│   │   │   └── master
+│   │   ├── remotes
+│   │   │   └── origin
+│   │   │       └── HEAD
+│   │   └── tags
+│   └── shallow
+├── README.md
+├── pyproject.toml
+├── rendergit.py
+└── uv.lock
+
+18 directories, 33 files
+</pre>
+      </section>
+
+      <section class="toc-top">
+        <h2>Table of contents (4)</h2>
+        <ul class="toc"><li><a href="#file-README-md">README.md</a> <span class="muted">(2.0 KiB)</span></li><li><a href="#file-pyproject-toml">pyproject.toml</a> <span class="muted">(885 B)</span></li><li><a href="#file-rendergit-py">rendergit.py</a> <span class="muted">(17.0 KiB)</span></li><li><a href="#file-uv-lock">uv.lock</a> <span class="muted">(1.7 KiB)</span></li></ul>
+      </section>
+
+      <section>
+        <h2>Skipped items</h2>
+        
+      </section>
+
+      
+<section class="file-section" id="file-README-md">
+  <h2>README.md <span class="muted">(2.0 KiB)</span></h2>
+  <div class="file-body"><h1 id="rendergit">rendergit</h1>
+<blockquote>
+<p>Just show me the code.</p>
+</blockquote>
+<p>Tired of clicking around complex file hierarchies of GitHub repos? Do you just want to see all of the code on a single page? Enter <code>rendergit</code>. Flatten any GitHub repository into a single, static HTML page with syntax highlighting, markdown rendering, and a clean sidebar navigation. Perfect for code review, exploration, and an instant Ctrl+F experience.</p>
+<h2 id="basic-usage">Basic usage</h2>
+<p>Install and use easily with <a href="https://docs.astral.sh/uv/">uv</a>:</p>
+<pre><code class="language-bash">uv tool install git+https://github.com/karpathy/rendergit
+rendergit https://github.com/karpathy/nanogpt
+</code></pre>
+<p>Alternatively, more manual pip install example:</p>
+<pre><code class="language-bash">git clone https://github.com/karpathy/rendergit
+cd rendergit
+pip install -e .
+rendergit https://github.com/karpathy/nanoGPT
+</code></pre>
+<p>The code will:
+1. Clone the repo to a temporary directory
+2. Render its source code into a single static temporary HTML file
+3. Automatically open the file in your browser</p>
+<p>Once open, you can toggle between two views:
+- <strong>👤 Human View</strong>: Browse with syntax highlighting, sidebar navigation, visual goodies
+- <strong>🤖 LLM View</strong>: Copy the entire codebase as CXML text to paste into Claude, ChatGPT, etc.</p>
+<p>There's a few other smaller options, see the code.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Dual view modes</strong> - toggle between Human and LLM views</li>
+<li><strong>👤 Human View</strong>: Pretty interface with syntax highlighting and navigation</li>
+<li><strong>🤖 LLM View</strong>: Raw CXML text format - perfect for copying to Claude/ChatGPT for code analysis</li>
+<li><strong>Syntax highlighting</strong> for code files via Pygments</li>
+<li><strong>Markdown rendering</strong> for README files and docs</li>
+<li><strong>Smart filtering</strong> - skips binaries and oversized files</li>
+<li><strong>Directory tree</strong> overview at the top</li>
+<li><strong>Sidebar navigation</strong> with file links and sizes</li>
+<li><strong>Responsive design</strong> that works on mobile</li>
+<li><strong>Search-friendly</strong> - use Ctrl+F to find anything across all files</li>
+</ul>
+<h2 id="contributing">Contributing</h2>
+<p>I vibe coded this utility a few months ago but I keep using it very often so I figured I'd just share it. I don't super intend to maintain or support it though.</p>
+<h2 id="license">License</h2>
+<p>BSD0 go nuts</p></div>
+  <div class="back-top"><a href="#top">↑ Back to top</a></div>
+</section>
+
+<section class="file-section" id="file-pyproject-toml">
+  <h2>pyproject.toml <span class="muted">(885 B)</span></h2>
+  <div class="file-body"><div class="highlight"><div class="highlight"><pre><span></span><span class="k">[build-system]</span>
+<span class="n">requires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;setuptools &gt;= 61.0&quot;</span><span class="p">]</span>
+<span class="n">build-backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;setuptools.build_meta&quot;</span>
+
+<span class="k">[project]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;rendergit&quot;</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.1.0&quot;</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Flatten a GitHub repo into a single static HTML page for fast skimming and Ctrl+F&quot;</span>
+<span class="n">readme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;README.md&quot;</span>
+<span class="n">license</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0BSD&quot;</span>
+<span class="n">authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;Andrej Karpathy&quot;</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">requires-python</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&gt;=3.10&quot;</span>
+<span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;markdown&gt;=3.8.2&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;pygments&gt;=2.19.2&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">classifiers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;Development Status :: 4 - Beta&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Intended Audience :: Developers&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Programming Language :: Python :: 3.10&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Programming Language :: Python :: 3.11&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Programming Language :: Python :: 3.12&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Programming Language :: Python :: 3.13&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Topic :: Utilities&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="k">[project.scripts]</span>
+<span class="n">rendergit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;rendergit:main&quot;</span>
+
+<span class="k">[project.urls]</span>
+<span class="n">Homepage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://github.com/karpathy/rendergit&quot;</span>
+<span class="n">Repository</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://github.com/karpathy/rendergit&quot;</span>
+</pre></div>
+</div></div>
+  <div class="back-top"><a href="#top">↑ Back to top</a></div>
+</section>
+
+<section class="file-section" id="file-rendergit-py">
+  <h2>rendergit.py <span class="muted">(17.0 KiB)</span></h2>
+  <div class="file-body"><div class="highlight"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Flatten a GitHub repo into a single static HTML page for fast skimming and Ctrl+F.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">html</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">webbrowser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+
+<span class="c1"># External deps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pygments</span><span class="w"> </span><span class="kn">import</span> <span class="n">highlight</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pygments.formatters</span><span class="w"> </span><span class="kn">import</span> <span class="n">HtmlFormatter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pygments.lexers</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_lexer_for_filename</span><span class="p">,</span> <span class="n">TextLexer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">markdown</span>
+
+<span class="n">MAX_DEFAULT_BYTES</span> <span class="o">=</span> <span class="mi">50</span> <span class="o">*</span> <span class="mi">1024</span>
+<span class="n">BINARY_EXTENSIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;.png&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span> <span class="s2">&quot;.gif&quot;</span><span class="p">,</span> <span class="s2">&quot;.webp&quot;</span><span class="p">,</span> <span class="s2">&quot;.bmp&quot;</span><span class="p">,</span> <span class="s2">&quot;.svg&quot;</span><span class="p">,</span> <span class="s2">&quot;.ico&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.pdf&quot;</span><span class="p">,</span> <span class="s2">&quot;.zip&quot;</span><span class="p">,</span> <span class="s2">&quot;.tar&quot;</span><span class="p">,</span> <span class="s2">&quot;.gz&quot;</span><span class="p">,</span> <span class="s2">&quot;.bz2&quot;</span><span class="p">,</span> <span class="s2">&quot;.xz&quot;</span><span class="p">,</span> <span class="s2">&quot;.7z&quot;</span><span class="p">,</span> <span class="s2">&quot;.rar&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.mp3&quot;</span><span class="p">,</span> <span class="s2">&quot;.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;.mov&quot;</span><span class="p">,</span> <span class="s2">&quot;.avi&quot;</span><span class="p">,</span> <span class="s2">&quot;.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;.wav&quot;</span><span class="p">,</span> <span class="s2">&quot;.ogg&quot;</span><span class="p">,</span> <span class="s2">&quot;.flac&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.ttf&quot;</span><span class="p">,</span> <span class="s2">&quot;.otf&quot;</span><span class="p">,</span> <span class="s2">&quot;.eot&quot;</span><span class="p">,</span> <span class="s2">&quot;.woff&quot;</span><span class="p">,</span> <span class="s2">&quot;.woff2&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.so&quot;</span><span class="p">,</span> <span class="s2">&quot;.dll&quot;</span><span class="p">,</span> <span class="s2">&quot;.dylib&quot;</span><span class="p">,</span> <span class="s2">&quot;.class&quot;</span><span class="p">,</span> <span class="s2">&quot;.jar&quot;</span><span class="p">,</span> <span class="s2">&quot;.exe&quot;</span><span class="p">,</span> <span class="s2">&quot;.bin&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">MARKDOWN_EXTENSIONS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.md&quot;</span><span class="p">,</span> <span class="s2">&quot;.markdown&quot;</span><span class="p">,</span> <span class="s2">&quot;.mdown&quot;</span><span class="p">,</span> <span class="s2">&quot;.mkd&quot;</span><span class="p">,</span> <span class="s2">&quot;.mkdn&quot;</span><span class="p">}</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenderDecision</span><span class="p">:</span>
+    <span class="n">include</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># &quot;ok&quot; | &quot;binary&quot; | &quot;too_large&quot; | &quot;ignored&quot;</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileInfo</span><span class="p">:</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span>  <span class="c1"># absolute path on disk</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># path relative to repo root (slash-separated)</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">decision</span><span class="p">:</span> <span class="n">RenderDecision</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">cwd</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="n">cwd</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="n">check</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">git_clone</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">run</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;clone&quot;</span><span class="p">,</span> <span class="s2">&quot;--depth&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">dst</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">git_head_commit</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">run</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;rev-parse&quot;</span><span class="p">,</span> <span class="s2">&quot;HEAD&quot;</span><span class="p">],</span> <span class="n">cwd</span><span class="o">=</span><span class="n">repo_dir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cp</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;(unknown)&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">bytes_human</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Human-readable bytes: 1 decimal for KiB and above, integer for B.&quot;&quot;&quot;</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;KiB&quot;</span><span class="p">,</span> <span class="s2">&quot;MiB&quot;</span><span class="p">,</span> <span class="s2">&quot;GiB&quot;</span><span class="p">,</span> <span class="s2">&quot;TiB&quot;</span><span class="p">]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">f</span> <span class="o">&gt;=</span> <span class="mf">1024.0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">units</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">/=</span> <span class="mf">1024.0</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">units</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">units</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">looks_binary</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">ext</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">BINARY_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">chunk</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8192</span><span class="p">)</span>
+        <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">chunk</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="c1"># Heuristic: try UTF-8 decode; if it hard-fails, likely binary</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">chunk</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c1"># If unreadable, treat as binary to be safe</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">decide_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">max_bytes</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileInfo</span><span class="p">:</span>
+    <span class="n">rel</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">repo_root</span><span class="p">))</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Ignore VCS and build junk</span>
+    <span class="k">if</span> <span class="s2">&quot;/.git/&quot;</span> <span class="ow">in</span> <span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">rel</span><span class="si">}</span><span class="s2">/&quot;</span> <span class="ow">or</span> <span class="n">rel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;.git/&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">RenderDecision</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;ignored&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="n">max_bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">RenderDecision</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;too_large&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">looks_binary</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">RenderDecision</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;binary&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">RenderDecision</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;ok&quot;</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">collect_files</span><span class="p">(</span><span class="n">repo_root</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">max_bytes</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
+    <span class="n">infos</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">repo_root</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">is_symlink</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+            <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">decide_file</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">repo_root</span><span class="p">,</span> <span class="n">max_bytes</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">infos</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_tree_fallback</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Minimal tree-like output if `tree` command is missing.&quot;&quot;&quot;</span>
+    <span class="n">lines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">prefix_stack</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">dir_path</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;.git&quot;</span><span class="p">]</span>
+        <span class="n">entries</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="ow">not</span> <span class="n">e</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(),</span> <span class="n">e</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">entries</span><span class="p">):</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">branch</span> <span class="o">=</span> <span class="s2">&quot;└── &quot;</span> <span class="k">if</span> <span class="n">last</span> <span class="k">else</span> <span class="s2">&quot;├── &quot;</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">branch</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+                <span class="n">extension</span> <span class="o">=</span> <span class="s2">&quot;    &quot;</span> <span class="k">if</span> <span class="n">last</span> <span class="k">else</span> <span class="s2">&quot;│   &quot;</span>
+                <span class="n">walk</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">extension</span><span class="p">)</span>
+
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">walk</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">try_tree_command</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">run</span><span class="p">([</span><span class="s2">&quot;tree&quot;</span><span class="p">,</span> <span class="s2">&quot;-a&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">],</span> <span class="n">cwd</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">cp</span><span class="o">.</span><span class="n">stdout</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">generate_tree_fallback</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">read_text</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">render_markdown_text</span><span class="p">(</span><span class="n">md_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">markdown</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="n">md_text</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;fenced_code&quot;</span><span class="p">,</span> <span class="s2">&quot;tables&quot;</span><span class="p">,</span> <span class="s2">&quot;toc&quot;</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">highlight_code</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">formatter</span><span class="p">:</span> <span class="n">HtmlFormatter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">lexer</span> <span class="o">=</span> <span class="n">get_lexer_for_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">stripall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">lexer</span> <span class="o">=</span> <span class="n">TextLexer</span><span class="p">(</span><span class="n">stripall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">highlight</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">lexer</span><span class="p">,</span> <span class="n">formatter</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">slugify</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># Simple slug: keep alnum, dash, underscore; replace others with &#39;-&#39;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">path_str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ch</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="ow">or</span> <span class="n">ch</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">}:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_cxml_text</span><span class="p">(</span><span class="n">infos</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">],</span> <span class="n">repo_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate CXML format text for LLM consumption.&quot;&quot;&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;documents&gt;&quot;</span><span class="p">]</span>
+
+    <span class="n">rendered</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">include</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rendered</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&lt;document index=&quot;</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">&quot;&gt;&#39;</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;source&gt;</span><span class="si">{</span><span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="si">}</span><span class="s2">&lt;/source&gt;&quot;</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;document_content&gt;&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">read_text</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to read: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;/document_content&gt;&quot;</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;/document&gt;&quot;</span><span class="p">)</span>
+
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;/documents&gt;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build_html</span><span class="p">(</span><span class="n">repo_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">head_commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">infos</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="n">HtmlFormatter</span><span class="p">(</span><span class="n">nowrap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">pygments_css</span> <span class="o">=</span> <span class="n">formatter</span><span class="o">.</span><span class="n">get_style_defs</span><span class="p">(</span><span class="s1">&#39;.highlight&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Stats</span>
+    <span class="n">rendered</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">include</span><span class="p">]</span>
+    <span class="n">skipped_binary</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">reason</span> <span class="o">==</span> <span class="s2">&quot;binary&quot;</span><span class="p">]</span>
+    <span class="n">skipped_large</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">reason</span> <span class="o">==</span> <span class="s2">&quot;too_large&quot;</span><span class="p">]</span>
+    <span class="n">skipped_ignored</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">reason</span> <span class="o">==</span> <span class="s2">&quot;ignored&quot;</span><span class="p">]</span>
+    <span class="n">total_files</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">skipped_binary</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">skipped_large</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">skipped_ignored</span><span class="p">)</span>
+
+    <span class="c1"># Directory tree</span>
+    <span class="n">tree_text</span> <span class="o">=</span> <span class="n">try_tree_command</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">)</span>
+
+    <span class="c1"># Generate CXML text for LLM view</span>
+    <span class="n">cxml_text</span> <span class="o">=</span> <span class="n">generate_cxml_text</span><span class="p">(</span><span class="n">infos</span><span class="p">,</span> <span class="n">repo_dir</span><span class="p">)</span>
+
+    <span class="c1"># Table of contents</span>
+    <span class="n">toc_items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">rendered</span><span class="p">:</span>
+        <span class="n">anchor</span> <span class="o">=</span> <span class="n">slugify</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="p">)</span>
+        <span class="n">toc_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;&lt;li&gt;&lt;a href=&quot;#file-</span><span class="si">{</span><span class="n">anchor</span><span class="si">}</span><span class="s1">&quot;&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="p">)</span><span class="si">}</span><span class="s1">&lt;/a&gt; &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;&lt;span class=&quot;muted&quot;&gt;(</span><span class="si">{</span><span class="n">bytes_human</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="si">}</span><span class="s1">)&lt;/span&gt;&lt;/li&gt;&#39;</span>
+        <span class="p">)</span>
+    <span class="n">toc_html</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">toc_items</span><span class="p">)</span>
+
+    <span class="c1"># Render file sections</span>
+    <span class="n">sections</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">rendered</span><span class="p">:</span>
+        <span class="n">anchor</span> <span class="o">=</span> <span class="n">slugify</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">path</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">read_text</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">MARKDOWN_EXTENSIONS</span><span class="p">:</span>
+                <span class="n">body_html</span> <span class="o">=</span> <span class="n">render_markdown_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">code_html</span> <span class="o">=</span> <span class="n">highlight_code</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="p">,</span> <span class="n">formatter</span><span class="p">)</span>
+                <span class="n">body_html</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;div class=&quot;highlight&quot;&gt;</span><span class="si">{</span><span class="n">code_html</span><span class="si">}</span><span class="s1">&lt;/div&gt;&#39;</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">body_html</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&lt;pre class=&quot;error&quot;&gt;Failed to render: </span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span><span class="si">}</span><span class="s1">&lt;/pre&gt;&#39;</span>
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&lt;section class=&quot;file-section&quot; id=&quot;file-</span><span class="si">{</span><span class="n">anchor</span><span class="si">}</span><span class="s2">&quot;&gt;</span>
+<span class="s2">  &lt;h2&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="p">)</span><span class="si">}</span><span class="s2"> &lt;span class=&quot;muted&quot;&gt;(</span><span class="si">{</span><span class="n">bytes_human</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="si">}</span><span class="s2">)&lt;/span&gt;&lt;/h2&gt;</span>
+<span class="s2">  &lt;div class=&quot;file-body&quot;&gt;</span><span class="si">{</span><span class="n">body_html</span><span class="si">}</span><span class="s2">&lt;/div&gt;</span>
+<span class="s2">  &lt;div class=&quot;back-top&quot;&gt;&lt;a href=&quot;#top&quot;&gt;↑ Back to top&lt;/a&gt;&lt;/div&gt;</span>
+<span class="s2">&lt;/section&gt;</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Skips lists</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render_skip_list</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">lis</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;&lt;li&gt;&lt;code&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">rel</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/code&gt; &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;&lt;span class=&#39;muted&#39;&gt;(</span><span class="si">{</span><span class="n">bytes_human</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="si">}</span><span class="s2">)&lt;/span&gt;&lt;/li&gt;&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;&lt;details open&gt;&lt;summary&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span><span class="si">}</span><span class="s2">)&lt;/summary&gt;&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;&lt;ul class=&#39;skip-list&#39;&gt;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lis</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&lt;/ul&gt;&lt;/details&gt;&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">skipped_html</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">render_skip_list</span><span class="p">(</span><span class="s2">&quot;Skipped binaries&quot;</span><span class="p">,</span> <span class="n">skipped_binary</span><span class="p">)</span> <span class="o">+</span>
+        <span class="n">render_skip_list</span><span class="p">(</span><span class="s2">&quot;Skipped large files&quot;</span><span class="p">,</span> <span class="n">skipped_large</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># HTML with left sidebar TOC</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&lt;!DOCTYPE html&gt;</span>
+<span class="s2">&lt;html lang=&quot;en&quot;&gt;</span>
+<span class="s2">&lt;head&gt;</span>
+<span class="s2">&lt;meta charset=&quot;utf-8&quot; /&gt;</span>
+<span class="s2">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot; /&gt;</span>
+<span class="s2">&lt;title&gt;Flattened repo – </span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">repo_url</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/title&gt;</span>
+<span class="s2">&lt;style&gt;</span>
+<span class="s2">  body </span><span class="se">{{</span>
+<span class="s2">    font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, &#39;Apple Color Emoji&#39;,&#39;Segoe UI Emoji&#39;;</span>
+<span class="s2">    margin: 0; padding: 0; line-height: 1.45;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="s2">  .container </span><span class="se">{{</span><span class="s2"> max-width: 1100px; margin: 0 auto; padding: 0 1rem; </span><span class="se">}}</span>
+<span class="s2">  .meta small </span><span class="se">{{</span><span class="s2"> color: #666; </span><span class="se">}}</span>
+<span class="s2">  .counts </span><span class="se">{{</span><span class="s2"> margin-top: 0.25rem; color: #333; </span><span class="se">}}</span>
+<span class="s2">  .muted </span><span class="se">{{</span><span class="s2"> color: #777; font-weight: normal; font-size: 0.9em; </span><span class="se">}}</span>
+
+<span class="s2">  /* Layout with sidebar */</span>
+<span class="s2">  .page </span><span class="se">{{</span><span class="s2"> display: grid; grid-template-columns: 320px minmax(0,1fr); gap: 0; </span><span class="se">}}</span>
+<span class="s2">  #sidebar </span><span class="se">{{</span>
+<span class="s2">    position: sticky; top: 0; align-self: start;</span>
+<span class="s2">    height: 100vh; overflow: auto;</span>
+<span class="s2">    border-right: 1px solid #eee; background: #fafbfc;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="s2">  #sidebar .sidebar-inner </span><span class="se">{{</span><span class="s2"> padding: 0.75rem; </span><span class="se">}}</span>
+<span class="s2">  #sidebar h2 </span><span class="se">{{</span><span class="s2"> margin: 0 0 0.5rem 0; font-size: 1rem; </span><span class="se">}}</span>
+
+<span class="s2">  .toc </span><span class="se">{{</span><span class="s2"> list-style: none; padding-left: 0; margin: 0; overflow-x: auto; </span><span class="se">}}</span>
+<span class="s2">  .toc li </span><span class="se">{{</span><span class="s2"> padding: 0.15rem 0; white-space: nowrap; </span><span class="se">}}</span>
+<span class="s2">  .toc a </span><span class="se">{{</span><span class="s2"> text-decoration: none; color: #0366d6; display: inline-block; text-decoration: none; </span><span class="se">}}</span>
+<span class="s2">  .toc a:hover </span><span class="se">{{</span><span class="s2"> text-decoration: underline; </span><span class="se">}}</span>
+
+<span class="s2">  main.container </span><span class="se">{{</span><span class="s2"> padding-top: 1rem; </span><span class="se">}}</span>
+
+<span class="s2">  pre </span><span class="se">{{</span><span class="s2"> background: #f6f8fa; padding: 0.75rem; overflow: auto; border-radius: 6px; </span><span class="se">}}</span>
+<span class="s2">  code </span><span class="se">{{</span><span class="s2"> font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &#39;Liberation Mono&#39;,&#39;Courier New&#39;, monospace; </span><span class="se">}}</span>
+<span class="s2">  .highlight </span><span class="se">{{</span><span class="s2"> overflow-x: auto; </span><span class="se">}}</span>
+<span class="s2">  .file-section </span><span class="se">{{</span><span class="s2"> padding: 1rem; border-top: 1px solid #eee; </span><span class="se">}}</span>
+<span class="s2">  .file-section h2 </span><span class="se">{{</span><span class="s2"> margin: 0 0 0.5rem 0; font-size: 1.1rem; </span><span class="se">}}</span>
+<span class="s2">  .file-body </span><span class="se">{{</span><span class="s2"> margin-bottom: 0.5rem; </span><span class="se">}}</span>
+<span class="s2">  .back-top </span><span class="se">{{</span><span class="s2"> font-size: 0.9rem; </span><span class="se">}}</span>
+<span class="s2">  .skip-list code </span><span class="se">{{</span><span class="s2"> background: #f6f8fa; padding: 0.1rem 0.3rem; border-radius: 4px; </span><span class="se">}}</span>
+<span class="s2">  .error </span><span class="se">{{</span><span class="s2"> color: #b00020; background: #fff3f3; </span><span class="se">}}</span>
+
+<span class="s2">  /* Hide duplicate top TOC on wide screens */</span>
+<span class="s2">  .toc-top </span><span class="se">{{</span><span class="s2"> display: block; </span><span class="se">}}</span>
+<span class="s2">  @media (min-width: 1000px) </span><span class="se">{{</span><span class="s2"> .toc-top </span><span class="se">{{</span><span class="s2"> display: none; </span><span class="se">}}</span><span class="s2"> </span><span class="se">}}</span>
+
+<span class="s2">  :target </span><span class="se">{{</span><span class="s2"> scroll-margin-top: 8px; </span><span class="se">}}</span>
+
+<span class="s2">  /* View toggle */</span>
+<span class="s2">  .view-toggle </span><span class="se">{{</span>
+<span class="s2">    margin: 1rem 0;</span>
+<span class="s2">    display: flex;</span>
+<span class="s2">    gap: 0.5rem;</span>
+<span class="s2">    align-items: center;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="s2">  .toggle-btn </span><span class="se">{{</span>
+<span class="s2">    padding: 0.5rem 1rem;</span>
+<span class="s2">    border: 1px solid #d1d9e0;</span>
+<span class="s2">    background: white;</span>
+<span class="s2">    cursor: pointer;</span>
+<span class="s2">    border-radius: 6px;</span>
+<span class="s2">    font-size: 0.9rem;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="s2">  .toggle-btn.active </span><span class="se">{{</span>
+<span class="s2">    background: #0366d6;</span>
+<span class="s2">    color: white;</span>
+<span class="s2">    border-color: #0366d6;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="s2">  .toggle-btn:hover:not(.active) </span><span class="se">{{</span>
+<span class="s2">    background: #f6f8fa;</span>
+<span class="s2">  </span><span class="se">}}</span>
+
+<span class="s2">  /* LLM view */</span>
+<span class="s2">  #llm-view </span><span class="se">{{</span><span class="s2"> display: none; </span><span class="se">}}</span>
+<span class="s2">  #llm-text </span><span class="se">{{</span>
+<span class="s2">    width: 100%;</span>
+<span class="s2">    height: 70vh;</span>
+<span class="s2">    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;</span>
+<span class="s2">    font-size: 0.85em;</span>
+<span class="s2">    border: 1px solid #d1d9e0;</span>
+<span class="s2">    border-radius: 6px;</span>
+<span class="s2">    padding: 1rem;</span>
+<span class="s2">    resize: vertical;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="s2">  .copy-hint </span><span class="se">{{</span>
+<span class="s2">    margin-top: 0.5rem;</span>
+<span class="s2">    color: #666;</span>
+<span class="s2">    font-size: 0.9em;</span>
+<span class="s2">  </span><span class="se">}}</span>
+
+<span class="s2">  /* Pygments */</span>
+<span class="s2">  </span><span class="si">{</span><span class="n">pygments_css</span><span class="si">}</span>
+<span class="s2">&lt;/style&gt;</span>
+<span class="s2">&lt;/head&gt;</span>
+<span class="s2">&lt;body&gt;</span>
+<span class="s2">&lt;a id=&quot;top&quot;&gt;&lt;/a&gt;</span>
+
+<span class="s2">&lt;div class=&quot;page&quot;&gt;</span>
+<span class="s2">  &lt;nav id=&quot;sidebar&quot;&gt;&lt;div class=&quot;sidebar-inner&quot;&gt;</span>
+<span class="s2">      &lt;h2&gt;Contents (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span><span class="si">}</span><span class="s2">)&lt;/h2&gt;</span>
+<span class="s2">      &lt;ul class=&quot;toc toc-sidebar&quot;&gt;</span>
+<span class="s2">        &lt;li&gt;&lt;a href=&quot;#top&quot;&gt;↑ Back to top&lt;/a&gt;&lt;/li&gt;</span>
+<span class="s2">        </span><span class="si">{</span><span class="n">toc_html</span><span class="si">}</span>
+<span class="s2">      &lt;/ul&gt;</span>
+<span class="s2">  &lt;/div&gt;&lt;/nav&gt;</span>
+
+<span class="s2">  &lt;main class=&quot;container&quot;&gt;</span>
+
+<span class="s2">    &lt;section&gt;</span>
+<span class="s2">        &lt;div class=&quot;meta&quot;&gt;</span>
+<span class="s2">        &lt;div&gt;&lt;strong&gt;Repository:&lt;/strong&gt; &lt;a href=&quot;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">repo_url</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">repo_url</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/a&gt;&lt;/div&gt;</span>
+<span class="s2">        &lt;small&gt;&lt;strong&gt;HEAD commit:&lt;/strong&gt; </span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">head_commit</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/small&gt;</span>
+<span class="s2">        &lt;div class=&quot;counts&quot;&gt;</span>
+<span class="s2">            &lt;strong&gt;Total files:&lt;/strong&gt; </span><span class="si">{</span><span class="n">total_files</span><span class="si">}</span><span class="s2"> · &lt;strong&gt;Rendered:&lt;/strong&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span><span class="si">}</span><span class="s2"> · &lt;strong&gt;Skipped:&lt;/strong&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">skipped_binary</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">skipped_large</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">skipped_ignored</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">        &lt;/div&gt;</span>
+<span class="s2">        &lt;/div&gt;</span>
+<span class="s2">    &lt;/section&gt;</span>
+
+<span class="s2">    &lt;div class=&quot;view-toggle&quot;&gt;</span>
+<span class="s2">      &lt;strong&gt;View:&lt;/strong&gt;</span>
+<span class="s2">      &lt;button class=&quot;toggle-btn active&quot; onclick=&quot;showHumanView()&quot;&gt;👤 Human&lt;/button&gt;</span>
+<span class="s2">      &lt;button class=&quot;toggle-btn&quot; onclick=&quot;showLLMView()&quot;&gt;🤖 LLM&lt;/button&gt;</span>
+<span class="s2">    &lt;/div&gt;</span>
+
+<span class="s2">    &lt;div id=&quot;human-view&quot;&gt;</span>
+<span class="s2">      &lt;section&gt;</span>
+<span class="s2">        &lt;h2&gt;Directory tree&lt;/h2&gt;</span>
+<span class="s2">        &lt;pre&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">tree_text</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/pre&gt;</span>
+<span class="s2">      &lt;/section&gt;</span>
+
+<span class="s2">      &lt;section class=&quot;toc-top&quot;&gt;</span>
+<span class="s2">        &lt;h2&gt;Table of contents (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span><span class="si">}</span><span class="s2">)&lt;/h2&gt;</span>
+<span class="s2">        &lt;ul class=&quot;toc&quot;&gt;</span><span class="si">{</span><span class="n">toc_html</span><span class="si">}</span><span class="s2">&lt;/ul&gt;</span>
+<span class="s2">      &lt;/section&gt;</span>
+
+<span class="s2">      &lt;section&gt;</span>
+<span class="s2">        &lt;h2&gt;Skipped items&lt;/h2&gt;</span>
+<span class="s2">        </span><span class="si">{</span><span class="n">skipped_html</span><span class="si">}</span>
+<span class="s2">      &lt;/section&gt;</span>
+
+<span class="s2">      </span><span class="si">{</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">    &lt;/div&gt;</span>
+
+<span class="s2">    &lt;div id=&quot;llm-view&quot;&gt;</span>
+<span class="s2">      &lt;section&gt;</span>
+<span class="s2">        &lt;h2&gt;🤖 LLM View - CXML Format&lt;/h2&gt;</span>
+<span class="s2">        &lt;p&gt;Copy the text below and paste it to an LLM for analysis:&lt;/p&gt;</span>
+<span class="s2">        &lt;textarea id=&quot;llm-text&quot; readonly&gt;</span><span class="si">{</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">cxml_text</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/textarea&gt;</span>
+<span class="s2">        &lt;div class=&quot;copy-hint&quot;&gt;</span>
+<span class="s2">          💡 &lt;strong&gt;Tip:&lt;/strong&gt; Click in the text area and press Ctrl+A (Cmd+A on Mac) to select all, then Ctrl+C (Cmd+C) to copy.</span>
+<span class="s2">        &lt;/div&gt;</span>
+<span class="s2">      &lt;/section&gt;</span>
+<span class="s2">    &lt;/div&gt;</span>
+<span class="s2">  &lt;/main&gt;</span>
+<span class="s2">&lt;/div&gt;</span>
+
+<span class="s2">&lt;script&gt;</span>
+<span class="s2">function showHumanView() </span><span class="se">{{</span>
+<span class="s2">  document.getElementById(&#39;human-view&#39;).style.display = &#39;block&#39;;</span>
+<span class="s2">  document.getElementById(&#39;llm-view&#39;).style.display = &#39;none&#39;;</span>
+<span class="s2">  document.querySelectorAll(&#39;.toggle-btn&#39;).forEach(btn =&gt; btn.classList.remove(&#39;active&#39;));</span>
+<span class="s2">  event.target.classList.add(&#39;active&#39;);</span>
+<span class="se">}}</span>
+
+<span class="s2">function showLLMView() </span><span class="se">{{</span>
+<span class="s2">  document.getElementById(&#39;human-view&#39;).style.display = &#39;none&#39;;</span>
+<span class="s2">  document.getElementById(&#39;llm-view&#39;).style.display = &#39;block&#39;;</span>
+<span class="s2">  document.querySelectorAll(&#39;.toggle-btn&#39;).forEach(btn =&gt; btn.classList.remove(&#39;active&#39;));</span>
+<span class="s2">  event.target.classList.add(&#39;active&#39;);</span>
+
+<span class="s2">  // Auto-select all text when switching to LLM view for easy copying</span>
+<span class="s2">  setTimeout(() =&gt; </span><span class="se">{{</span>
+<span class="s2">    const textArea = document.getElementById(&#39;llm-text&#39;);</span>
+<span class="s2">    textArea.focus();</span>
+<span class="s2">    textArea.select();</span>
+<span class="s2">  </span><span class="se">}}</span><span class="s2">, 100);</span>
+<span class="se">}}</span>
+<span class="s2">&lt;/script&gt;</span>
+<span class="s2">&lt;/body&gt;</span>
+<span class="s2">&lt;/html&gt;</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">derive_temp_output_path</span><span class="p">(</span><span class="n">repo_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a temporary output path from the repo URL.&quot;&quot;&quot;</span>
+    <span class="c1"># Extract repo name from URL like https://github.com/owner/repo or https://github.com/owner/repo.git</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">repo_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">repo_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">repo_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.git&#39;</span><span class="p">):</span>
+            <span class="n">repo_name</span> <span class="o">=</span> <span class="n">repo_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">repo_name</span><span class="si">}</span><span class="s2">.html&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;repo.html&quot;</span>
+
+    <span class="k">return</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">())</span> <span class="o">/</span> <span class="n">filename</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">ap</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Flatten a GitHub repo to a single HTML page&quot;</span><span class="p">)</span>
+    <span class="n">ap</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;repo_url&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;GitHub repo URL (https://github.com/owner/repo[.git])&quot;</span><span class="p">)</span>
+    <span class="n">ap</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-o&quot;</span><span class="p">,</span> <span class="s2">&quot;--out&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Output HTML file path (default: temporary file derived from repo name)&quot;</span><span class="p">)</span>
+    <span class="n">ap</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max-bytes&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">MAX_DEFAULT_BYTES</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Max file size to render (bytes); larger files are listed but skipped&quot;</span><span class="p">)</span>
+    <span class="n">ap</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--no-open&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Don&#39;t open the HTML file in browser after generation&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Set default output path if not provided</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">out</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">derive_temp_output_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">repo_url</span><span class="p">))</span>
+
+    <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;flatten_repo_&quot;</span><span class="p">)</span>
+    <span class="n">repo_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="s2">&quot;repo&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📁 Cloning </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">repo_url</span><span class="si">}</span><span class="s2"> to temporary directory: </span><span class="si">{</span><span class="n">repo_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">git_clone</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">repo_url</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">))</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="n">git_head_commit</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Clone complete (HEAD: </span><span class="si">{</span><span class="n">head</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📊 Scanning files in </span><span class="si">{</span><span class="n">repo_dir</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">infos</span> <span class="o">=</span> <span class="n">collect_files</span><span class="p">(</span><span class="n">repo_dir</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">max_bytes</span><span class="p">)</span>
+        <span class="n">rendered_count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">decision</span><span class="o">.</span><span class="n">include</span><span class="p">)</span>
+        <span class="n">skipped_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">infos</span><span class="p">)</span> <span class="o">-</span> <span class="n">rendered_count</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">infos</span><span class="p">)</span><span class="si">}</span><span class="s2"> files total (</span><span class="si">{</span><span class="n">rendered_count</span><span class="si">}</span><span class="s2"> will be rendered, </span><span class="si">{</span><span class="n">skipped_count</span><span class="si">}</span><span class="s2"> skipped)&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🔨 Generating HTML...&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">html_out</span> <span class="o">=</span> <span class="n">build_html</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">repo_url</span><span class="p">,</span> <span class="n">repo_dir</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">infos</span><span class="p">)</span>
+
+        <span class="n">out_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;💾 Writing HTML file: </span><span class="si">{</span><span class="n">out_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">out_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">html_out</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">file_size</span> <span class="o">=</span> <span class="n">out_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Wrote </span><span class="si">{</span><span class="n">bytes_human</span><span class="p">(</span><span class="n">file_size</span><span class="p">)</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_open</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🌐 Opening </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2"> in browser...&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;file://</span><span class="si">{</span><span class="n">out_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🗑️  Cleaning up temporary directory: </span><span class="si">{</span><span class="n">tmpdir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div></div>
+  <div class="back-top"><a href="#top">↑ Back to top</a></div>
+</section>
+
+<section class="file-section" id="file-uv-lock">
+  <h2>uv.lock <span class="muted">(1.7 KiB)</span></h2>
+  <div class="file-body"><div class="highlight"><div class="highlight"><pre><span></span>version = 1
+revision = 3
+requires-python = &quot;&gt;=3.10&quot;
+
+[[package]]
+name = &quot;markdown&quot;
+version = &quot;3.8.2&quot;
+source = { registry = &quot;https://pypi.org/simple&quot; }
+sdist = { url = &quot;https://files.pythonhosted.org/packages/d7/c2/4ab49206c17f75cb08d6311171f2d65798988db4360c4d1485bd0eedd67c/markdown-3.8.2.tar.gz&quot;, hash = &quot;sha256:247b9a70dd12e27f67431ce62523e675b866d254f900c4fe75ce3dda62237c45&quot;, size = 362071, upload-time = &quot;2025-06-19T17:12:44.483Z&quot; }
+wheels = [
+    { url = &quot;https://files.pythonhosted.org/packages/96/2b/34cc11786bc00d0f04d0f5fdc3a2b1ae0b6239eef72d3d345805f9ad92a1/markdown-3.8.2-py3-none-any.whl&quot;, hash = &quot;sha256:5c83764dbd4e00bdd94d85a19b8d55ccca20fe35b2e678a1422b380324dd5f24&quot;, size = 106827, upload-time = &quot;2025-06-19T17:12:42.994Z&quot; },
+]
+
+[[package]]
+name = &quot;pygments&quot;
+version = &quot;2.19.2&quot;
+source = { registry = &quot;https://pypi.org/simple&quot; }
+sdist = { url = &quot;https://files.pythonhosted.org/packages/b0/77/a5b8c569bf593b0140bde72ea885a803b82086995367bf2037de0159d924/pygments-2.19.2.tar.gz&quot;, hash = &quot;sha256:636cb2477cec7f8952536970bc533bc43743542f70392ae026374600add5b887&quot;, size = 4968631, upload-time = &quot;2025-06-21T13:39:12.283Z&quot; }
+wheels = [
+    { url = &quot;https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl&quot;, hash = &quot;sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b&quot;, size = 1225217, upload-time = &quot;2025-06-21T13:39:07.939Z&quot; },
+]
+
+[[package]]
+name = &quot;render-git&quot;
+version = &quot;0.1.0&quot;
+source = { editable = &quot;.&quot; }
+dependencies = [
+    { name = &quot;markdown&quot; },
+    { name = &quot;pygments&quot; },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = &quot;markdown&quot;, specifier = &quot;&gt;=3.8.2&quot; },
+    { name = &quot;pygments&quot;, specifier = &quot;&gt;=2.19.2&quot; },
+]
+</pre></div>
+</div></div>
+  <div class="back-top"><a href="#top">↑ Back to top</a></div>
+</section>
+
+    </div>
+
+    <div id="llm-view">
+      <section>
+        <h2>🤖 LLM View - CXML Format</h2>
+        <p>Copy the text below and paste it to an LLM for analysis:</p>
+        <textarea id="llm-text" readonly>&lt;documents&gt;
+&lt;document index=&quot;1&quot;&gt;
+&lt;source&gt;README.md&lt;/source&gt;
+&lt;document_content&gt;
+# rendergit
+
+&gt; Just show me the code.
+
+Tired of clicking around complex file hierarchies of GitHub repos? Do you just want to see all of the code on a single page? Enter `rendergit`. Flatten any GitHub repository into a single, static HTML page with syntax highlighting, markdown rendering, and a clean sidebar navigation. Perfect for code review, exploration, and an instant Ctrl+F experience.
+
+## Basic usage
+
+Install and use easily with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv tool install git+https://github.com/karpathy/rendergit
+rendergit https://github.com/karpathy/nanogpt
+```
+
+Alternatively, more manual pip install example:
+
+```bash
+git clone https://github.com/karpathy/rendergit
+cd rendergit
+pip install -e .
+rendergit https://github.com/karpathy/nanoGPT
+```
+
+The code will:
+1. Clone the repo to a temporary directory
+2. Render its source code into a single static temporary HTML file
+3. Automatically open the file in your browser
+
+Once open, you can toggle between two views:
+- **👤 Human View**: Browse with syntax highlighting, sidebar navigation, visual goodies
+- **🤖 LLM View**: Copy the entire codebase as CXML text to paste into Claude, ChatGPT, etc.
+
+There&#x27;s a few other smaller options, see the code.
+
+## Features
+
+- **Dual view modes** - toggle between Human and LLM views
+  - **👤 Human View**: Pretty interface with syntax highlighting and navigation
+  - **🤖 LLM View**: Raw CXML text format - perfect for copying to Claude/ChatGPT for code analysis
+- **Syntax highlighting** for code files via Pygments
+- **Markdown rendering** for README files and docs
+- **Smart filtering** - skips binaries and oversized files
+- **Directory tree** overview at the top
+- **Sidebar navigation** with file links and sizes
+- **Responsive design** that works on mobile
+- **Search-friendly** - use Ctrl+F to find anything across all files
+
+## Contributing
+
+I vibe coded this utility a few months ago but I keep using it very often so I figured I&#x27;d just share it. I don&#x27;t super intend to maintain or support it though.
+
+## License
+
+BSD0 go nuts
+
+&lt;/document_content&gt;
+&lt;/document&gt;
+&lt;document index=&quot;2&quot;&gt;
+&lt;source&gt;pyproject.toml&lt;/source&gt;
+&lt;document_content&gt;
+[build-system]
+requires = [&quot;setuptools &gt;= 61.0&quot;]
+build-backend = &quot;setuptools.build_meta&quot;
+
+[project]
+name = &quot;rendergit&quot;
+version = &quot;0.1.0&quot;
+description = &quot;Flatten a GitHub repo into a single static HTML page for fast skimming and Ctrl+F&quot;
+readme = &quot;README.md&quot;
+license = &quot;0BSD&quot;
+authors = [
+    {name = &quot;Andrej Karpathy&quot;},
+]
+requires-python = &quot;&gt;=3.10&quot;
+dependencies = [
+    &quot;markdown&gt;=3.8.2&quot;,
+    &quot;pygments&gt;=2.19.2&quot;,
+]
+classifiers = [
+    &quot;Development Status :: 4 - Beta&quot;,
+    &quot;Intended Audience :: Developers&quot;,
+    &quot;Programming Language :: Python :: 3.10&quot;,
+    &quot;Programming Language :: Python :: 3.11&quot;,
+    &quot;Programming Language :: Python :: 3.12&quot;,
+    &quot;Programming Language :: Python :: 3.13&quot;,
+    &quot;Topic :: Utilities&quot;,
+]
+
+[project.scripts]
+rendergit = &quot;rendergit:main&quot;
+
+[project.urls]
+Homepage = &quot;https://github.com/karpathy/rendergit&quot;
+Repository = &quot;https://github.com/karpathy/rendergit&quot;
+
+&lt;/document_content&gt;
+&lt;/document&gt;
+&lt;document index=&quot;3&quot;&gt;
+&lt;source&gt;rendergit.py&lt;/source&gt;
+&lt;document_content&gt;
+#!/usr/bin/env python3
+&quot;&quot;&quot;
+Flatten a GitHub repo into a single static HTML page for fast skimming and Ctrl+F.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+import argparse
+import html
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+import webbrowser
+from dataclasses import dataclass
+from typing import List
+
+# External deps
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_for_filename, TextLexer
+import markdown
+
+MAX_DEFAULT_BYTES = 50 * 1024
+BINARY_EXTENSIONS = {
+    &quot;.png&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;, &quot;.gif&quot;, &quot;.webp&quot;, &quot;.bmp&quot;, &quot;.svg&quot;, &quot;.ico&quot;,
+    &quot;.pdf&quot;, &quot;.zip&quot;, &quot;.tar&quot;, &quot;.gz&quot;, &quot;.bz2&quot;, &quot;.xz&quot;, &quot;.7z&quot;, &quot;.rar&quot;,
+    &quot;.mp3&quot;, &quot;.mp4&quot;, &quot;.mov&quot;, &quot;.avi&quot;, &quot;.mkv&quot;, &quot;.wav&quot;, &quot;.ogg&quot;, &quot;.flac&quot;,
+    &quot;.ttf&quot;, &quot;.otf&quot;, &quot;.eot&quot;, &quot;.woff&quot;, &quot;.woff2&quot;,
+    &quot;.so&quot;, &quot;.dll&quot;, &quot;.dylib&quot;, &quot;.class&quot;, &quot;.jar&quot;, &quot;.exe&quot;, &quot;.bin&quot;,
+}
+MARKDOWN_EXTENSIONS = {&quot;.md&quot;, &quot;.markdown&quot;, &quot;.mdown&quot;, &quot;.mkd&quot;, &quot;.mkdn&quot;}
+
+@dataclass
+class RenderDecision:
+    include: bool
+    reason: str  # &quot;ok&quot; | &quot;binary&quot; | &quot;too_large&quot; | &quot;ignored&quot;
+
+@dataclass
+class FileInfo:
+    path: pathlib.Path  # absolute path on disk
+    rel: str            # path relative to repo root (slash-separated)
+    size: int
+    decision: RenderDecision
+
+
+def run(cmd: List[str], cwd: str | None = None, check: bool = True) -&gt; subprocess.CompletedProcess:
+    return subprocess.run(cmd, cwd=cwd, check=check, text=True, capture_output=True)
+
+
+def git_clone(url: str, dst: str) -&gt; None:
+    run([&quot;git&quot;, &quot;clone&quot;, &quot;--depth&quot;, &quot;1&quot;, url, dst])
+
+
+def git_head_commit(repo_dir: str) -&gt; str:
+    try:
+        cp = run([&quot;git&quot;, &quot;rev-parse&quot;, &quot;HEAD&quot;], cwd=repo_dir)
+        return cp.stdout.strip()
+    except Exception:
+        return &quot;(unknown)&quot;
+
+
+def bytes_human(n: int) -&gt; str:
+    &quot;&quot;&quot;Human-readable bytes: 1 decimal for KiB and above, integer for B.&quot;&quot;&quot;
+    units = [&quot;B&quot;, &quot;KiB&quot;, &quot;MiB&quot;, &quot;GiB&quot;, &quot;TiB&quot;]
+    f = float(n)
+    i = 0
+    while f &gt;= 1024.0 and i &lt; len(units) - 1:
+        f /= 1024.0
+        i += 1
+    if i == 0:
+        return f&quot;{int(f)} {units[i]}&quot;
+    else:
+        return f&quot;{f:.1f} {units[i]}&quot;
+
+
+def looks_binary(path: pathlib.Path) -&gt; bool:
+    ext = path.suffix.lower()
+    if ext in BINARY_EXTENSIONS:
+        return True
+    try:
+        with path.open(&quot;rb&quot;) as f:
+            chunk = f.read(8192)
+        if b&quot;\x00&quot; in chunk:
+            return True
+        # Heuristic: try UTF-8 decode; if it hard-fails, likely binary
+        try:
+            chunk.decode(&quot;utf-8&quot;)
+        except UnicodeDecodeError:
+            return True
+        return False
+    except Exception:
+        # If unreadable, treat as binary to be safe
+        return True
+
+
+def decide_file(path: pathlib.Path, repo_root: pathlib.Path, max_bytes: int) -&gt; FileInfo:
+    rel = str(path.relative_to(repo_root)).replace(os.sep, &quot;/&quot;)
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        size = 0
+    # Ignore VCS and build junk
+    if &quot;/.git/&quot; in f&quot;/{rel}/&quot; or rel.startswith(&quot;.git/&quot;):
+        return FileInfo(path, rel, size, RenderDecision(False, &quot;ignored&quot;))
+    if size &gt; max_bytes:
+        return FileInfo(path, rel, size, RenderDecision(False, &quot;too_large&quot;))
+    if looks_binary(path):
+        return FileInfo(path, rel, size, RenderDecision(False, &quot;binary&quot;))
+    return FileInfo(path, rel, size, RenderDecision(True, &quot;ok&quot;))
+
+
+def collect_files(repo_root: pathlib.Path, max_bytes: int) -&gt; List[FileInfo]:
+    infos: List[FileInfo] = []
+    for p in sorted(repo_root.rglob(&quot;*&quot;)):
+        if p.is_symlink():
+            continue
+        if p.is_file():
+            infos.append(decide_file(p, repo_root, max_bytes))
+    return infos
+
+
+def generate_tree_fallback(root: pathlib.Path) -&gt; str:
+    &quot;&quot;&quot;Minimal tree-like output if `tree` command is missing.&quot;&quot;&quot;
+    lines: List[str] = []
+    prefix_stack: List[str] = []
+
+    def walk(dir_path: pathlib.Path, prefix: str = &quot;&quot;):
+        entries = [e for e in dir_path.iterdir() if e.name != &quot;.git&quot;]
+        entries.sort(key=lambda e: (not e.is_dir(), e.name.lower()))
+        for i, e in enumerate(entries):
+            last = i == len(entries) - 1
+            branch = &quot;└── &quot; if last else &quot;├── &quot;
+            lines.append(prefix + branch + e.name)
+            if e.is_dir():
+                extension = &quot;    &quot; if last else &quot;│   &quot;
+                walk(e, prefix + extension)
+
+    lines.append(root.name)
+    walk(root)
+    return &quot;\n&quot;.join(lines)
+
+
+def try_tree_command(root: pathlib.Path) -&gt; str:
+    try:
+        cp = run([&quot;tree&quot;, &quot;-a&quot;, &quot;.&quot;], cwd=str(root))
+        return cp.stdout
+    except Exception:
+        return generate_tree_fallback(root)
+
+
+def read_text(path: pathlib.Path) -&gt; str:
+    return path.read_text(encoding=&quot;utf-8&quot;, errors=&quot;replace&quot;)
+
+
+def render_markdown_text(md_text: str) -&gt; str:
+    return markdown.markdown(md_text, extensions=[&quot;fenced_code&quot;, &quot;tables&quot;, &quot;toc&quot;])  # type: ignore
+
+
+def highlight_code(text: str, filename: str, formatter: HtmlFormatter) -&gt; str:
+    try:
+        lexer = get_lexer_for_filename(filename, stripall=False)
+    except Exception:
+        lexer = TextLexer(stripall=False)
+    return highlight(text, lexer, formatter)
+
+
+def slugify(path_str: str) -&gt; str:
+    # Simple slug: keep alnum, dash, underscore; replace others with &#x27;-&#x27;
+    out = []
+    for ch in path_str:
+        if ch.isalnum() or ch in {&quot;-&quot;, &quot;_&quot;}:
+            out.append(ch)
+        else:
+            out.append(&quot;-&quot;)
+    return &quot;&quot;.join(out)
+
+
+def generate_cxml_text(infos: List[FileInfo], repo_dir: pathlib.Path) -&gt; str:
+    &quot;&quot;&quot;Generate CXML format text for LLM consumption.&quot;&quot;&quot;
+    lines = [&quot;&lt;documents&gt;&quot;]
+
+    rendered = [i for i in infos if i.decision.include]
+    for index, i in enumerate(rendered, 1):
+        lines.append(f&#x27;&lt;document index=&quot;{index}&quot;&gt;&#x27;)
+        lines.append(f&quot;&lt;source&gt;{i.rel}&lt;/source&gt;&quot;)
+        lines.append(&quot;&lt;document_content&gt;&quot;)
+
+        try:
+            text = read_text(i.path)
+            lines.append(text)
+        except Exception as e:
+            lines.append(f&quot;Failed to read: {str(e)}&quot;)
+
+        lines.append(&quot;&lt;/document_content&gt;&quot;)
+        lines.append(&quot;&lt;/document&gt;&quot;)
+
+    lines.append(&quot;&lt;/documents&gt;&quot;)
+    return &quot;\n&quot;.join(lines)
+
+
+def build_html(repo_url: str, repo_dir: pathlib.Path, head_commit: str, infos: List[FileInfo]) -&gt; str:
+    formatter = HtmlFormatter(nowrap=False)
+    pygments_css = formatter.get_style_defs(&#x27;.highlight&#x27;)
+
+    # Stats
+    rendered = [i for i in infos if i.decision.include]
+    skipped_binary = [i for i in infos if i.decision.reason == &quot;binary&quot;]
+    skipped_large = [i for i in infos if i.decision.reason == &quot;too_large&quot;]
+    skipped_ignored = [i for i in infos if i.decision.reason == &quot;ignored&quot;]
+    total_files = len(rendered) + len(skipped_binary) + len(skipped_large) + len(skipped_ignored)
+
+    # Directory tree
+    tree_text = try_tree_command(repo_dir)
+
+    # Generate CXML text for LLM view
+    cxml_text = generate_cxml_text(infos, repo_dir)
+
+    # Table of contents
+    toc_items: List[str] = []
+    for i in rendered:
+        anchor = slugify(i.rel)
+        toc_items.append(
+            f&#x27;&lt;li&gt;&lt;a href=&quot;#file-{anchor}&quot;&gt;{html.escape(i.rel)}&lt;/a&gt; &#x27;
+            f&#x27;&lt;span class=&quot;muted&quot;&gt;({bytes_human(i.size)})&lt;/span&gt;&lt;/li&gt;&#x27;
+        )
+    toc_html = &quot;&quot;.join(toc_items)
+
+    # Render file sections
+    sections: List[str] = []
+    for i in rendered:
+        anchor = slugify(i.rel)
+        p = i.path
+        ext = p.suffix.lower()
+        try:
+            text = read_text(p)
+            if ext in MARKDOWN_EXTENSIONS:
+                body_html = render_markdown_text(text)
+            else:
+                code_html = highlight_code(text, i.rel, formatter)
+                body_html = f&#x27;&lt;div class=&quot;highlight&quot;&gt;{code_html}&lt;/div&gt;&#x27;
+        except Exception as e:
+            body_html = f&#x27;&lt;pre class=&quot;error&quot;&gt;Failed to render: {html.escape(str(e))}&lt;/pre&gt;&#x27;
+        sections.append(f&quot;&quot;&quot;
+&lt;section class=&quot;file-section&quot; id=&quot;file-{anchor}&quot;&gt;
+  &lt;h2&gt;{html.escape(i.rel)} &lt;span class=&quot;muted&quot;&gt;({bytes_human(i.size)})&lt;/span&gt;&lt;/h2&gt;
+  &lt;div class=&quot;file-body&quot;&gt;{body_html}&lt;/div&gt;
+  &lt;div class=&quot;back-top&quot;&gt;&lt;a href=&quot;#top&quot;&gt;↑ Back to top&lt;/a&gt;&lt;/div&gt;
+&lt;/section&gt;
+&quot;&quot;&quot;)
+
+    # Skips lists
+    def render_skip_list(title: str, items: List[FileInfo]) -&gt; str:
+        if not items:
+            return &quot;&quot;
+        lis = [
+            f&quot;&lt;li&gt;&lt;code&gt;{html.escape(i.rel)}&lt;/code&gt; &quot;
+            f&quot;&lt;span class=&#x27;muted&#x27;&gt;({bytes_human(i.size)})&lt;/span&gt;&lt;/li&gt;&quot;
+            for i in items
+        ]
+        return (
+            f&quot;&lt;details open&gt;&lt;summary&gt;{html.escape(title)} ({len(items)})&lt;/summary&gt;&quot;
+            f&quot;&lt;ul class=&#x27;skip-list&#x27;&gt;\n&quot; + &quot;\n&quot;.join(lis) + &quot;\n&lt;/ul&gt;&lt;/details&gt;&quot;
+        )
+
+    skipped_html = (
+        render_skip_list(&quot;Skipped binaries&quot;, skipped_binary) +
+        render_skip_list(&quot;Skipped large files&quot;, skipped_large)
+    )
+
+    # HTML with left sidebar TOC
+    return f&quot;&quot;&quot;
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot; /&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot; /&gt;
+&lt;title&gt;Flattened repo – {html.escape(repo_url)}&lt;/title&gt;
+&lt;style&gt;
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, &#x27;Apple Color Emoji&#x27;,&#x27;Segoe UI Emoji&#x27;;
+    margin: 0; padding: 0; line-height: 1.45;
+  }}
+  .container {{ max-width: 1100px; margin: 0 auto; padding: 0 1rem; }}
+  .meta small {{ color: #666; }}
+  .counts {{ margin-top: 0.25rem; color: #333; }}
+  .muted {{ color: #777; font-weight: normal; font-size: 0.9em; }}
+
+  /* Layout with sidebar */
+  .page {{ display: grid; grid-template-columns: 320px minmax(0,1fr); gap: 0; }}
+  #sidebar {{
+    position: sticky; top: 0; align-self: start;
+    height: 100vh; overflow: auto;
+    border-right: 1px solid #eee; background: #fafbfc;
+  }}
+  #sidebar .sidebar-inner {{ padding: 0.75rem; }}
+  #sidebar h2 {{ margin: 0 0 0.5rem 0; font-size: 1rem; }}
+
+  .toc {{ list-style: none; padding-left: 0; margin: 0; overflow-x: auto; }}
+  .toc li {{ padding: 0.15rem 0; white-space: nowrap; }}
+  .toc a {{ text-decoration: none; color: #0366d6; display: inline-block; text-decoration: none; }}
+  .toc a:hover {{ text-decoration: underline; }}
+
+  main.container {{ padding-top: 1rem; }}
+
+  pre {{ background: #f6f8fa; padding: 0.75rem; overflow: auto; border-radius: 6px; }}
+  code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &#x27;Liberation Mono&#x27;,&#x27;Courier New&#x27;, monospace; }}
+  .highlight {{ overflow-x: auto; }}
+  .file-section {{ padding: 1rem; border-top: 1px solid #eee; }}
+  .file-section h2 {{ margin: 0 0 0.5rem 0; font-size: 1.1rem; }}
+  .file-body {{ margin-bottom: 0.5rem; }}
+  .back-top {{ font-size: 0.9rem; }}
+  .skip-list code {{ background: #f6f8fa; padding: 0.1rem 0.3rem; border-radius: 4px; }}
+  .error {{ color: #b00020; background: #fff3f3; }}
+
+  /* Hide duplicate top TOC on wide screens */
+  .toc-top {{ display: block; }}
+  @media (min-width: 1000px) {{ .toc-top {{ display: none; }} }}
+
+  :target {{ scroll-margin-top: 8px; }}
+
+  /* View toggle */
+  .view-toggle {{
+    margin: 1rem 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }}
+  .toggle-btn {{
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d9e0;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }}
+  .toggle-btn.active {{
+    background: #0366d6;
+    color: white;
+    border-color: #0366d6;
+  }}
+  .toggle-btn:hover:not(.active) {{
+    background: #f6f8fa;
+  }}
+
+  /* LLM view */
+  #llm-view {{ display: none; }}
+  #llm-text {{
+    width: 100%;
+    height: 70vh;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85em;
+    border: 1px solid #d1d9e0;
+    border-radius: 6px;
+    padding: 1rem;
+    resize: vertical;
+  }}
+  .copy-hint {{
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.9em;
+  }}
+
+  /* Pygments */
+  {pygments_css}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;a id=&quot;top&quot;&gt;&lt;/a&gt;
+
+&lt;div class=&quot;page&quot;&gt;
+  &lt;nav id=&quot;sidebar&quot;&gt;&lt;div class=&quot;sidebar-inner&quot;&gt;
+      &lt;h2&gt;Contents ({len(rendered)})&lt;/h2&gt;
+      &lt;ul class=&quot;toc toc-sidebar&quot;&gt;
+        &lt;li&gt;&lt;a href=&quot;#top&quot;&gt;↑ Back to top&lt;/a&gt;&lt;/li&gt;
+        {toc_html}
+      &lt;/ul&gt;
+  &lt;/div&gt;&lt;/nav&gt;
+
+  &lt;main class=&quot;container&quot;&gt;
+
+    &lt;section&gt;
+        &lt;div class=&quot;meta&quot;&gt;
+        &lt;div&gt;&lt;strong&gt;Repository:&lt;/strong&gt; &lt;a href=&quot;{html.escape(repo_url)}&quot;&gt;{html.escape(repo_url)}&lt;/a&gt;&lt;/div&gt;
+        &lt;small&gt;&lt;strong&gt;HEAD commit:&lt;/strong&gt; {html.escape(head_commit)}&lt;/small&gt;
+        &lt;div class=&quot;counts&quot;&gt;
+            &lt;strong&gt;Total files:&lt;/strong&gt; {total_files} · &lt;strong&gt;Rendered:&lt;/strong&gt; {len(rendered)} · &lt;strong&gt;Skipped:&lt;/strong&gt; {len(skipped_binary) + len(skipped_large) + len(skipped_ignored)}
+        &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/section&gt;
+
+    &lt;div class=&quot;view-toggle&quot;&gt;
+      &lt;strong&gt;View:&lt;/strong&gt;
+      &lt;button class=&quot;toggle-btn active&quot; onclick=&quot;showHumanView()&quot;&gt;👤 Human&lt;/button&gt;
+      &lt;button class=&quot;toggle-btn&quot; onclick=&quot;showLLMView()&quot;&gt;🤖 LLM&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div id=&quot;human-view&quot;&gt;
+      &lt;section&gt;
+        &lt;h2&gt;Directory tree&lt;/h2&gt;
+        &lt;pre&gt;{html.escape(tree_text)}&lt;/pre&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;toc-top&quot;&gt;
+        &lt;h2&gt;Table of contents ({len(rendered)})&lt;/h2&gt;
+        &lt;ul class=&quot;toc&quot;&gt;{toc_html}&lt;/ul&gt;
+      &lt;/section&gt;
+
+      &lt;section&gt;
+        &lt;h2&gt;Skipped items&lt;/h2&gt;
+        {skipped_html}
+      &lt;/section&gt;
+
+      {&#x27;&#x27;.join(sections)}
+    &lt;/div&gt;
+
+    &lt;div id=&quot;llm-view&quot;&gt;
+      &lt;section&gt;
+        &lt;h2&gt;🤖 LLM View - CXML Format&lt;/h2&gt;
+        &lt;p&gt;Copy the text below and paste it to an LLM for analysis:&lt;/p&gt;
+        &lt;textarea id=&quot;llm-text&quot; readonly&gt;{html.escape(cxml_text)}&lt;/textarea&gt;
+        &lt;div class=&quot;copy-hint&quot;&gt;
+          💡 &lt;strong&gt;Tip:&lt;/strong&gt; Click in the text area and press Ctrl+A (Cmd+A on Mac) to select all, then Ctrl+C (Cmd+C) to copy.
+        &lt;/div&gt;
+      &lt;/section&gt;
+    &lt;/div&gt;
+  &lt;/main&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+function showHumanView() {{
+  document.getElementById(&#x27;human-view&#x27;).style.display = &#x27;block&#x27;;
+  document.getElementById(&#x27;llm-view&#x27;).style.display = &#x27;none&#x27;;
+  document.querySelectorAll(&#x27;.toggle-btn&#x27;).forEach(btn =&gt; btn.classList.remove(&#x27;active&#x27;));
+  event.target.classList.add(&#x27;active&#x27;);
+}}
+
+function showLLMView() {{
+  document.getElementById(&#x27;human-view&#x27;).style.display = &#x27;none&#x27;;
+  document.getElementById(&#x27;llm-view&#x27;).style.display = &#x27;block&#x27;;
+  document.querySelectorAll(&#x27;.toggle-btn&#x27;).forEach(btn =&gt; btn.classList.remove(&#x27;active&#x27;));
+  event.target.classList.add(&#x27;active&#x27;);
+
+  // Auto-select all text when switching to LLM view for easy copying
+  setTimeout(() =&gt; {{
+    const textArea = document.getElementById(&#x27;llm-text&#x27;);
+    textArea.focus();
+    textArea.select();
+  }}, 100);
+}}
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+&quot;&quot;&quot;
+
+
+def derive_temp_output_path(repo_url: str) -&gt; pathlib.Path:
+    &quot;&quot;&quot;Derive a temporary output path from the repo URL.&quot;&quot;&quot;
+    # Extract repo name from URL like https://github.com/owner/repo or https://github.com/owner/repo.git
+    parts = repo_url.rstrip(&#x27;/&#x27;).split(&#x27;/&#x27;)
+    if len(parts) &gt;= 2:
+        repo_name = parts[-1]
+        if repo_name.endswith(&#x27;.git&#x27;):
+            repo_name = repo_name[:-4]
+        filename = f&quot;{repo_name}.html&quot;
+    else:
+        filename = &quot;repo.html&quot;
+
+    return pathlib.Path(tempfile.gettempdir()) / filename
+
+
+def main() -&gt; int:
+    ap = argparse.ArgumentParser(description=&quot;Flatten a GitHub repo to a single HTML page&quot;)
+    ap.add_argument(&quot;repo_url&quot;, help=&quot;GitHub repo URL (https://github.com/owner/repo[.git])&quot;)
+    ap.add_argument(&quot;-o&quot;, &quot;--out&quot;, help=&quot;Output HTML file path (default: temporary file derived from repo name)&quot;)
+    ap.add_argument(&quot;--max-bytes&quot;, type=int, default=MAX_DEFAULT_BYTES, help=&quot;Max file size to render (bytes); larger files are listed but skipped&quot;)
+    ap.add_argument(&quot;--no-open&quot;, action=&quot;store_true&quot;, help=&quot;Don&#x27;t open the HTML file in browser after generation&quot;)
+    args = ap.parse_args()
+
+    # Set default output path if not provided
+    if args.out is None:
+        args.out = str(derive_temp_output_path(args.repo_url))
+
+    tmpdir = tempfile.mkdtemp(prefix=&quot;flatten_repo_&quot;)
+    repo_dir = pathlib.Path(tmpdir, &quot;repo&quot;)
+
+    try:
+        print(f&quot;📁 Cloning {args.repo_url} to temporary directory: {repo_dir}&quot;, file=sys.stderr)
+        git_clone(args.repo_url, str(repo_dir))
+        head = git_head_commit(str(repo_dir))
+        print(f&quot;✓ Clone complete (HEAD: {head[:8]})&quot;, file=sys.stderr)
+
+        print(f&quot;📊 Scanning files in {repo_dir}...&quot;, file=sys.stderr)
+        infos = collect_files(repo_dir, args.max_bytes)
+        rendered_count = sum(1 for i in infos if i.decision.include)
+        skipped_count = len(infos) - rendered_count
+        print(f&quot;✓ Found {len(infos)} files total ({rendered_count} will be rendered, {skipped_count} skipped)&quot;, file=sys.stderr)
+
+        print(f&quot;🔨 Generating HTML...&quot;, file=sys.stderr)
+        html_out = build_html(args.repo_url, repo_dir, head, infos)
+
+        out_path = pathlib.Path(args.out)
+        print(f&quot;💾 Writing HTML file: {out_path.resolve()}&quot;, file=sys.stderr)
+        out_path.write_text(html_out, encoding=&quot;utf-8&quot;)
+        file_size = out_path.stat().st_size
+        print(f&quot;✓ Wrote {bytes_human(file_size)} to {out_path}&quot;, file=sys.stderr)
+
+        if not args.no_open:
+            print(f&quot;🌐 Opening {out_path} in browser...&quot;, file=sys.stderr)
+            webbrowser.open(f&quot;file://{out_path.resolve()}&quot;)
+
+        print(f&quot;🗑️  Cleaning up temporary directory: {tmpdir}&quot;, file=sys.stderr)
+        return 0
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+
+&lt;/document_content&gt;
+&lt;/document&gt;
+&lt;document index=&quot;4&quot;&gt;
+&lt;source&gt;uv.lock&lt;/source&gt;
+&lt;document_content&gt;
+version = 1
+revision = 3
+requires-python = &quot;&gt;=3.10&quot;
+
+[[package]]
+name = &quot;markdown&quot;
+version = &quot;3.8.2&quot;
+source = { registry = &quot;https://pypi.org/simple&quot; }
+sdist = { url = &quot;https://files.pythonhosted.org/packages/d7/c2/4ab49206c17f75cb08d6311171f2d65798988db4360c4d1485bd0eedd67c/markdown-3.8.2.tar.gz&quot;, hash = &quot;sha256:247b9a70dd12e27f67431ce62523e675b866d254f900c4fe75ce3dda62237c45&quot;, size = 362071, upload-time = &quot;2025-06-19T17:12:44.483Z&quot; }
+wheels = [
+    { url = &quot;https://files.pythonhosted.org/packages/96/2b/34cc11786bc00d0f04d0f5fdc3a2b1ae0b6239eef72d3d345805f9ad92a1/markdown-3.8.2-py3-none-any.whl&quot;, hash = &quot;sha256:5c83764dbd4e00bdd94d85a19b8d55ccca20fe35b2e678a1422b380324dd5f24&quot;, size = 106827, upload-time = &quot;2025-06-19T17:12:42.994Z&quot; },
+]
+
+[[package]]
+name = &quot;pygments&quot;
+version = &quot;2.19.2&quot;
+source = { registry = &quot;https://pypi.org/simple&quot; }
+sdist = { url = &quot;https://files.pythonhosted.org/packages/b0/77/a5b8c569bf593b0140bde72ea885a803b82086995367bf2037de0159d924/pygments-2.19.2.tar.gz&quot;, hash = &quot;sha256:636cb2477cec7f8952536970bc533bc43743542f70392ae026374600add5b887&quot;, size = 4968631, upload-time = &quot;2025-06-21T13:39:12.283Z&quot; }
+wheels = [
+    { url = &quot;https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl&quot;, hash = &quot;sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b&quot;, size = 1225217, upload-time = &quot;2025-06-21T13:39:07.939Z&quot; },
+]
+
+[[package]]
+name = &quot;render-git&quot;
+version = &quot;0.1.0&quot;
+source = { editable = &quot;.&quot; }
+dependencies = [
+    { name = &quot;markdown&quot; },
+    { name = &quot;pygments&quot; },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = &quot;markdown&quot;, specifier = &quot;&gt;=3.8.2&quot; },
+    { name = &quot;pygments&quot;, specifier = &quot;&gt;=2.19.2&quot; },
+]
+
+&lt;/document_content&gt;
+&lt;/document&gt;
+&lt;/documents&gt;</textarea>
+        <div class="copy-hint">
+          💡 <strong>Tip:</strong> Click in the text area and press Ctrl+A (Cmd+A on Mac) to select all, then Ctrl+C (Cmd+C) to copy.
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+function showHumanView() {
+  document.getElementById('human-view').style.display = 'block';
+  document.getElementById('llm-view').style.display = 'none';
+  document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function showLLMView() {
+  document.getElementById('human-view').style.display = 'none';
+  document.getElementById('llm-view').style.display = 'block';
+  document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // Auto-select all text when switching to LLM view for easy copying
+  setTimeout(() => {
+    const textArea = document.getElementById('llm-text');
+    textArea.focus();
+    textArea.select();
+  }, 100);
+}
+</script>
+</body>
+</html>
