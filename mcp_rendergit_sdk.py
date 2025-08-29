@@ -12,6 +12,8 @@ from urllib.parse import urlparse
 
 from mcp.server.fastmcp import FastMCP, Context
 from rendergit import render_repo_html
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 # --- Logging Setup ---
 logging.basicConfig(
@@ -22,6 +24,30 @@ logging.basicConfig(
 
 # Create MCP server
 mcp = FastMCP("rendergit-mcp")
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request):
+    """Health check endpoint for monitoring and load balancing."""
+    return JSONResponse({
+        "status": "healthy",
+        "service": "rendergit-mcp",
+        "version": "2.0.0",
+        "transport": "sse"
+    })
+
+
+@mcp.custom_route("/info", methods=["GET"])
+async def server_info(request: Request):
+    """Server information endpoint."""
+    return JSONResponse({
+        "service": "rendergit-mcp", 
+        "description": "MCP server for rendering Git repositories as LLM-friendly HTML",
+        "version": "2.0.0",
+        "health": "/health",
+        "mcp_endpoint": "/",
+        "tools": ["render_repo", "render_repo_to_file"]
+    })
 
 
 @mcp.tool()
@@ -82,7 +108,10 @@ async def render_repo_to_file(
             if project_subpath.strip():
                 base_path = f"/projects/{project_type}/{project_subpath.strip()}"
             else:
-                base_path = f"/projects/{project_type}"
+                # Default to current project directory name
+                # If CWD is /opt/docker/rendergit-mcp, use 'rendergit-mcp' as subpath
+                current_dir_name = os.path.basename(os.getcwd())
+                base_path = f"/projects/{project_type}/{current_dir_name}"
                 
             output_path = f"{base_path}/{repo_name}.html"
         
@@ -112,7 +141,7 @@ async def render_repo_to_file(
 def main():
     """Entry point for the MCP server."""
     # Parse command line arguments for transport type
-    transport = "stdio"  # default
+    transport = "sse"  # Use SSE transport with /sse endpoint
     port = 8080
     
     if len(sys.argv) > 1:
@@ -129,10 +158,7 @@ def main():
     logging.info(f"Starting rendergit MCP server with {transport} transport on {mcp.settings.host}:{mcp.settings.port}")
     
     # Run the server with specified transport
-    if transport == "sse":
-        mcp.run(transport="sse")
-    else:
-        mcp.run()
+    mcp.run(transport=transport)
 
 
 if __name__ == '__main__':
